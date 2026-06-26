@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useLayoutEffect } from "react";
+import { useState, useLayoutEffect, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Plus_Jakarta_Sans, Poppins } from "next/font/google";
 import { DASHBOARD_ASSETS } from "@/lib/dashboard-assets";
@@ -12,6 +12,10 @@ import { SidebarUserActions } from "@/components/dashboard/sidebar-user-actions"
 import { DashboardSearch } from "@/components/dashboard/dashboard-search";
 import { DiscordButton } from "@/components/dashboard/discord-button";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { createClient } from "@/lib/supabase/client";
+import { WelcomeCard } from "@/components/dashboard/welcome-card";
+import { PopularityRateCard } from "@/components/dashboard/popularity-rate-card";
+import { CompleteProfileCard } from "@/components/dashboard/complete-profile-card";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -31,7 +35,19 @@ export default function DashboardPage() {
   const [scale, setScale] = useState(1);
   const [viewH, setViewH] = useState(900);
   const [isMobile, setIsMobile] = useState(false);
+  const [displayName, setDisplayName] = useState("there");
   const pathname = usePathname();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const name =
+        (data.user?.user_metadata?.name as string | undefined) ||
+        (data.user?.user_metadata?.full_name as string | undefined) ||
+        "";
+      if (name) setDisplayName(name);
+    });
+  }, []);
 
   // Map pathname to display title
   const getPageTitle = (path: string) => {
@@ -258,6 +274,45 @@ export default function DashboardPage() {
               <ActivePullRequests />
               <EventsParticipated />
               <GetPatchIdScoreCard />
+            </div>
+
+            {/* Second Row of Cards: Welcome, Popularity, Profile Onboarding */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: mounted
+                  ? (isMobile ? "1fr" : "652px 350px 1fr")
+                  : "652px 350px 1fr",
+                columnGap: isMobile ? 12 : 18,
+                rowGap: isMobile ? 12 : 18,
+                width: "100%",
+              }}
+            >
+              <div>
+                <WelcomeCard
+                  profile={{
+                    display_name: displayName,
+                    avatar_url: null,
+                    github_username: "markjohnson",
+                  }}
+                  project={{
+                    title: "distributed-db-engine",
+                    has_project: true,
+                    github_url: "",
+                  }}
+                  metrics={{
+                    contributors_this_week: 3,
+                    open_prs_count: 2,
+                  }}
+                  eventNotice="Community event tomorrow!"
+                />
+              </div>
+              <div style={{ gridColumn: isMobile ? "span 1" : "span 1" }}>
+                <PopularityRateCard percentage={95} />
+              </div>
+              <div style={{ gridColumn: isMobile ? "span 1" : "span 1" }}>
+                <CompleteProfileCard onboardingPercentage={75} />
+              </div>
             </div>
           </main>
         </div>
